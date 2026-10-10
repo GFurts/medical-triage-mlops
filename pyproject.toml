@@ -5,8 +5,10 @@ description = "Medical report urgency triage API with MLOps pipeline"
 authors = [
     {name = "GFurts",email = "gabriel.g.furtado30@gmail.com"}
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.12,<3.13"
 dependencies = [
+    "scikit-learn (>=1.9.1,<2.0.0)",
+    "pandas (>=3.0.6,<4.0.0)"
 ]
 
 
@@ -15,3 +17,8 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 package-mode = false
+[dependency-groups]
+dev = [
+    "ipykernel (>=7.4.0,<8.0.0)",
+    "matplotlib (>=3.11.2,<4.0.0)"
+]
