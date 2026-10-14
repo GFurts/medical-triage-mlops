@@ -20,5 +20,6 @@ package-mode = false
 [dependency-groups]
 dev = [
     "ipykernel (>=7.4.0,<8.0.0)",
-    "matplotlib (>=3.11.2,<4.0.0)"
+    "matplotlib (>=3.11.2,<4.0.0)",
+    "notebook (>=7.6.3,<8.0.0)"
 ]
