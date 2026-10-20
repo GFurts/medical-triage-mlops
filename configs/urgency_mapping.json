@@ -1,0 +1,22 @@
+{
+    "1": {
+        "category": "neoplasms",
+        "urgency": "atencao"
+    },
+    "2": {
+        "category": "digestive_system_diseases",
+        "urgency": "atencao"
+    },
+    "3": {
+        "category": "nervous_system_diseases",
+        "urgency": "urgente"
+    },
+    "4": {
+        "category": "cardiovascular_diseases",
+        "urgency": "urgente"
+    },
+    "5": {
+        "category": "general_pathological_conditions",
+        "urgency": "normal"
+    }
+}
