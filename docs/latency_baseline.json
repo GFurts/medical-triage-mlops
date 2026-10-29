@@ -1,0 +1,10 @@
+{
+  "label": "baseline",
+  "url": "http://127.0.0.1:8000/predict",
+  "requests": 200,
+  "mean_ms": 28.08,
+  "p50_ms": 27.41,
+  "p95_ms": 29.64,
+  "p99_ms": 38.21,
+  "max_ms": 106.66
+}
