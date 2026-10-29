@@ -25,8 +25,16 @@ dev = [
     "matplotlib (>=3.11.2,<4.0.0)",
     "notebook (>=7.6.3,<8.0.0)",
     "pytest (>=9.1.1,<10.0.0)",
-    "httpx (>=0.28.1,<0.29.0)"
+    "httpx (>=0.28.1,<0.29.0)",
+    "ruff (>=0.17.3,<0.18.0)"
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
