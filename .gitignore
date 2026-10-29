@@ -11,6 +11,9 @@ __pycache__/
 # Dados brutos
 data/raw/
 
+# Modelos e artefatos treinados
+models/*.joblib
+
 # Segredos e configs locais
 .env
 
