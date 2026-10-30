@@ -1,0 +1,20 @@
+services:
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: triage-airflow
+    command: standalone
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"
+      MIN_URGENT_RECALL: "0.80"
+    volumes:
+      - ./dags:/opt/airflow/project/dags
+      - ./src:/opt/airflow/project/src
+      - ./configs:/opt/airflow/project/configs
+      - ./data:/opt/airflow/project/data
+      - ./models:/opt/airflow/project/models
