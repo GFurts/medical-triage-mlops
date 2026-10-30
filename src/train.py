@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import shutil
 from pathlib import Path
 
 import joblib
@@ -14,11 +16,14 @@ from src.data_cleaning import remove_ambiguous_texts
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
+PROCESSED_DIR = ROOT / "data" / "processed"
 MAPPING_PATH = ROOT / "configs" / "urgency_mapping.json"
 MODELS_DIR = ROOT / "models"
+CANDIDATE_PATH = MODELS_DIR / "candidate" / "model.joblib"
 MODEL_PATH = MODELS_DIR / "model.joblib"
 METRICS_PATH = MODELS_DIR / "metrics.json"
 RANDOM_STATE = 42
+MIN_URGENT_RECALL = float(os.getenv("MIN_URGENT_RECALL", "0.80"))
 
 
 def load_clean_data():
@@ -67,11 +72,16 @@ def evaluate(model, texts, labels, mapping):
     true_urgency = labels.map(mapping)
     pred_urgency = pd.Series(pred, index=labels.index).map(mapping)
     return {
-        "f1_macro (5 categorias)": f1_score(labels, pred, average="macro"),
-        "recall da classe urgente": recall_score(
+        "f1_macro": f1_score(labels, pred, average="macro"),
+        "urgent_recall": recall_score(
             true_urgency == "urgente", pred_urgency == "urgente"
         ),
     }
+
+
+def passes_quality_gate(metrics, min_recall=MIN_URGENT_RECALL):
+    """Só deixa um modelo novo substituir o atual se o recall urgente for bom o bastante."""
+    return metrics["urgent_recall"] >= min_recall
 
 
 def compare_class_weights():
@@ -98,34 +108,63 @@ def compare_class_weights():
             print(f"{metric}: {value:.3f}")
 
 
-def train_final():
-    """Treina o modelo escolhido com todo o treino limpo, avalia no teste e salva."""
+def prepare_data():
+    """Etapa 1: lê os CSVs brutos, limpa e grava em data/processed/."""
     train_clean, test_clean = load_clean_data()
-    mapping = load_urgency_mapping()
+    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    train_clean.to_csv(PROCESSED_DIR / "train.csv", index=False)
+    test_clean.to_csv(PROCESSED_DIR / "test.csv", index=False)
+    print(
+        f"Dados preparados: {len(train_clean)} linhas de treino, {len(test_clean)} de teste"
+    )
 
+
+def train_model():
+    """Etapa 2: treina o modelo e salva como CANDIDATO (não mexe no modelo em uso)."""
+    train_clean = pd.read_csv(PROCESSED_DIR / "train.csv")
     model = build_pipeline(class_weight="balanced")
     model.fit(train_clean["medical_abstract"], train_clean["condition_label"])
+    CANDIDATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, CANDIDATE_PATH)
+    print(f"Modelo candidato salvo em {CANDIDATE_PATH}")
+
+
+def evaluate_and_promote():
+    """Etapa 3: avalia o candidato no teste e só o promove se passar no portão de qualidade."""
+    train_clean = pd.read_csv(PROCESSED_DIR / "train.csv")
+    test_clean = pd.read_csv(PROCESSED_DIR / "test.csv")
+    mapping = load_urgency_mapping()
+    model = joblib.load(CANDIDATE_PATH)
 
     metrics = evaluate(
         model, test_clean["medical_abstract"], test_clean["condition_label"], mapping
     )
-    metrics["linhas_treino"] = len(train_clean)
-    metrics["linhas_teste"] = len(test_clean)
+    metrics["train_rows"] = len(train_clean)
+    metrics["test_rows"] = len(test_clean)
 
-    print("\n== Modelo final (avaliado no teste) ==")
-    for metric, value in metrics.items():
+    print("\n== Modelo candidato (avaliado no teste) ==")
+    for name, value in metrics.items():
         print(
-            f"{metric}: {value:.3f}"
-            if isinstance(value, float)
-            else f"{metric}: {value}"
+            f"{name}: {value:.3f}" if isinstance(value, float) else f"{name}: {value}"
+        )
+
+    if not passes_quality_gate(metrics):
+        raise SystemExit(
+            f"Modelo REPROVADO: urgent_recall {metrics['urgent_recall']:.3f} "
+            f"< mínimo {MIN_URGENT_RECALL}. O modelo em uso não foi alterado."
         )
 
     MODELS_DIR.mkdir(exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
-    METRICS_PATH.write_text(
-        json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    print(f"\nModelo salvo em {MODEL_PATH}")
+    shutil.copyfile(CANDIDATE_PATH, MODEL_PATH)
+    METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+    print(f"\nModelo aprovado e promovido para {MODEL_PATH}")
+
+
+STEPS = {
+    "prepare": prepare_data,
+    "train": train_model,
+    "evaluate": evaluate_and_promote,
+}
 
 
 def main():
@@ -133,12 +172,18 @@ def main():
     parser.add_argument(
         "--compare", action="store_true", help="roda o experimento de class_weight"
     )
+    parser.add_argument(
+        "--step", choices=STEPS, help="roda só uma etapa (sem isso, roda todas)"
+    )
     args = parser.parse_args()
 
     if args.compare:
         compare_class_weights()
+    elif args.step:
+        STEPS[args.step]()
     else:
-        train_final()
+        for step in STEPS.values():
+            step()
 
 
 if __name__ == "__main__":
