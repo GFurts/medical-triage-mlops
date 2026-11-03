@@ -2551,7 +2551,7 @@ version = "0.26.0"
 description = "Python client for the Prometheus monitoring system."
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "prometheus_client-0.26.0-py3-none-any.whl", hash = "sha256:fa93d06737aa02bacd05794768508bb97d2fbee28cb3bca04eaae92f0ca953d6"},
     {file = "prometheus_client-0.26.0.tar.gz", hash = "sha256:04a91bcf94e2cf74a44a1a874d651a2e853ed354b6e822f3b7487751465d5c2b"},
@@ -4157,4 +4157,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "702f286b85d869b65d816c3077160be343b0497edc04789b44949d56ac75054c"
+content-hash = "4974399a63ae77ce2116c75d7b7082eef8a0b7f9cd9f837727778d047026aa47"

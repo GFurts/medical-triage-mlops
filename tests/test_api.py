@@ -50,3 +50,11 @@ def test_predict_returns_valid_response(client):
 def test_predict_rejects_empty_text(client):
     response = client.post("/predict", json={"text": "   "})
     assert response.status_code == 422
+
+
+def test_metrics_endpoint_exposes_counters(client):
+    client.post("/predict", json={"text": "heart coronary disease"})
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+    assert "predictions_total" in response.text
