@@ -1,0 +1,10 @@
+{
+  "label": "instrumented",
+  "url": "http://127.0.0.1:8000/predict",
+  "requests": 200,
+  "mean_ms": 28.73,
+  "p50_ms": 27.96,
+  "p95_ms": 31.35,
+  "p99_ms": 40.28,
+  "max_ms": 69.62
+}
