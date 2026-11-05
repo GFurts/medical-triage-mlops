@@ -4,27 +4,38 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import joblib
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, ConfigDict, Field
+from src.predictors import OnnxPredictor, SklearnPredictor
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT / "models" / "model.joblib"))
+MODELS_DIR = Path(os.getenv("MODELS_DIR", ROOT / "models"))
 MAPPING_PATH = ROOT / "configs" / "urgency_mapping.json"
+MODEL_BACKEND = os.getenv("MODEL_BACKEND", "onnx")  # "onnx" ou "sklearn"
 
-# Buckets mais finos na faixa de ~5 a 100 ms, onde nossa latência (~28 ms) vive
+
+def _int_env(name):
+    value = os.getenv(name)
+    return int(value) if value else None
+
+
+SKLEARN_N_JOBS = _int_env("SKLEARN_N_JOBS")  # só vale para o backend sklearn
+ONNX_THREADS = _int_env("ONNX_THREADS")  # só vale para o backend onnx
+
+# Buckets finos também abaixo de 5 ms, porque o ONNX responde em poucos milissegundos
 LATENCY_BUCKETS = (
+    0.0005,
+    0.001,
+    0.002,
+    0.003,
     0.005,
+    0.0075,
     0.01,
     0.015,
     0.02,
-    0.025,
     0.03,
-    0.035,
-    0.04,
     0.05,
-    0.075,
     0.1,
     0.25,
     0.5,
@@ -42,7 +53,7 @@ REQUEST_LATENCY = Histogram(
 )
 INFERENCE_LATENCY = Histogram(
     "model_inference_seconds",
-    "Tempo gasto apenas na inferência (TF-IDF + Random Forest)",
+    "Tempo gasto apenas na inferência (TF-IDF + floresta)",
     buckets=LATENCY_BUCKETS,
 )
 PREDICTIONS = Counter(
@@ -52,15 +63,25 @@ PREDICTIONS = Counter(
 state = {}
 
 
+def build_predictor():
+    if MODEL_BACKEND == "onnx":
+        return OnnxPredictor(MODELS_DIR, threads=ONNX_THREADS)
+    if MODEL_BACKEND == "sklearn":
+        return SklearnPredictor(MODELS_DIR, n_jobs=SKLEARN_N_JOBS)
+    raise ValueError(
+        f"MODEL_BACKEND inválido: {MODEL_BACKEND!r} (use 'onnx' ou 'sklearn')"
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    state["model"] = joblib.load(MODEL_PATH)
+    state["predictor"] = build_predictor()
     state["mapping"] = json.loads(MAPPING_PATH.read_text(encoding="utf-8"))
     yield
     state.clear()
 
 
-app = FastAPI(title="Medical Triage API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Medical Triage API", version="0.3.0", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -98,7 +119,7 @@ class PredictResponse(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "backend": MODEL_BACKEND}
 
 
 @app.get("/metrics", include_in_schema=False)
@@ -108,15 +129,12 @@ def metrics():
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest):
-    model = state["model"]
     with INFERENCE_LATENCY.time():
-        probabilities = model.predict_proba([request.text])[0]
-    best = int(probabilities.argmax())
-    label = int(model.classes_[best])
+        label, confidence = state["predictor"].predict(request.text)
     info = state["mapping"][str(label)]
     PREDICTIONS.labels(info["urgency"]).inc()
     return PredictResponse(
         category=info["category"],
         urgency=info["urgency"],
-        confidence=round(float(probabilities[best]), 4),
+        confidence=round(confidence, 4),
     )

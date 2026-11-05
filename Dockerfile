@@ -15,7 +15,7 @@ RUN poetry install --only main --no-root
 # 2) Código, regra de negócio e modelo
 COPY src/ ./src/
 COPY configs/ ./configs/
-COPY models/model.joblib ./models/model.joblib
+COPY models/model.joblib models/vectorizer.joblib models/forest.onnx ./models/
 
 RUN useradd --create-home appuser
 USER appuser

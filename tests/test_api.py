@@ -1,33 +1,17 @@
 import joblib
 import pytest
 from fastapi.testclient import TestClient
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.pipeline import Pipeline
+from src.onnx_export import export_model
 
 from src import api
 
 
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    texts = [
-        "tumor cancer chemotherapy",
-        "liver stomach intestine",
-        "brain neuron stroke seizure",
-        "heart coronary myocardial",
-        "infection inflammation general",
-    ]
-    labels = [1, 2, 3, 4, 5]
-    model = Pipeline(
-        [
-            ("tfidf", TfidfVectorizer()),
-            ("clf", RandomForestClassifier(n_estimators=10, random_state=0)),
-        ]
-    ).fit(texts, labels)
-
-    model_path = tmp_path / "model.joblib"
-    joblib.dump(model, model_path)
-    monkeypatch.setattr(api, "MODEL_PATH", model_path)
+@pytest.fixture(params=["sklearn", "onnx"])
+def client(request, tiny_model, tmp_path, monkeypatch):
+    joblib.dump(tiny_model, tmp_path / "model.joblib")
+    export_model(tiny_model, tmp_path)
+    monkeypatch.setattr(api, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(api, "MODEL_BACKEND", request.param)
 
     with TestClient(api.app) as test_client:
         yield test_client
@@ -36,7 +20,7 @@ def client(tmp_path, monkeypatch):
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "ok"
 
 
 def test_predict_returns_valid_response(client):
