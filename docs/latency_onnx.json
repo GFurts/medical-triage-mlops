@@ -1,0 +1,10 @@
+{
+  "label": "onnx",
+  "url": "http://127.0.0.1:8000/predict",
+  "requests": 500,
+  "mean_ms": 2.46,
+  "p50_ms": 2.3,
+  "p95_ms": 3.08,
+  "p99_ms": 3.72,
+  "max_ms": 30.37
+}
