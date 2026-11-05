@@ -15,6 +15,7 @@ data/processed/
 # Modelos e artefatos treinados
 models/*.joblib
 models/candidate/
+models/*.onnx
 
 # Segredos e configs locais
 .env

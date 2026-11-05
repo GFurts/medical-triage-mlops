@@ -11,7 +11,8 @@ dependencies = [
     "pandas (>=3.0.6,<4.0.0)",
     "fastapi (>=0.162.0,<0.163.0)",
     "uvicorn[standard] (>=0.54.0,<0.55.0)",
-    "prometheus-client (>=0.26.0,<0.27.0)"
+    "prometheus-client (>=0.26.0,<0.27.0)",
+    "onnxruntime (>=1.31.1,<2.0.0)"
 ]
 
 
@@ -27,7 +28,8 @@ dev = [
     "notebook (>=7.6.3,<8.0.0)",
     "pytest (>=9.1.1,<10.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
-    "ruff (>=0.17.3,<0.18.0)"
+    "ruff (>=0.17.3,<0.18.0)",
+    "skl2onnx (>=1.20.0,<2.0.0)",
 ]
 
 [tool.pytest.ini_options]
