@@ -1,0 +1,10 @@
+{
+  "label": "render_sklearn",
+  "url": "http://127.0.0.1:8000/predict",
+  "requests": 200,
+  "mean_ms": 165.96,
+  "p50_ms": 105.28,
+  "p95_ms": 306.52,
+  "p99_ms": 699.95,
+  "max_ms": 1499.25
+}
