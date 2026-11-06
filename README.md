@@ -107,7 +107,7 @@ In triage the costly mistake is labeling an urgent case as not urgent, so the tr
 ![Airflow DAG](docs/images/airflow_dag.png)
 
 - Training runs in an isolated virtual environment inside the Airflow image, installed from the **same `poetry.lock` as the API**, so the model is trained and served with the same library versions.
-- The new model is saved as a **candidate** and replaces the one in use only if it passes **two gates**: urgent recall on the test set **≥ 0.80** (`MIN_URGENT_RECALL`), and an ONNX export that reproduces the scikit-learn probabilities within **1e-4** (the last run measured 1.9e-7). If a gate fails, the task fails and the serving model is untouched. A worse retrain cannot be promoted unnoticed.
+- The new model is saved as a **candidate** and replaces the one in use only if it passes **two gates**: urgent recall on the test set **≥ 0.80** (`MIN_URGENT_RECALL`), and an ONNX export that reproduces the scikit-learn probabilities within **1e-4** (measured gaps: 1.9e-7 in Airflow, 4.7e-7 on my machine). If a gate fails, the task fails and the serving model is untouched. A worse retrain cannot be promoted unnoticed.
 
 **Monitoring (Prometheus + Grafana)**: the API exposes `/metrics` with `http_requests_total`, `http_request_duration_seconds`, `model_inference_seconds` and `predictions_total` (by urgency level). Grafana starts provisioned, with the dashboard versioned under `monitoring/grafana/`, and has 7 panels: total requests, error rate, p95 latency, predictions by urgency, requests per second by status, p50/p95/p99 latency, and model inference vs full request.
 
