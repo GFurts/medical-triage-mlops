@@ -1,9 +1,9 @@
 import joblib
 import pytest
 from fastapi.testclient import TestClient
-from src.onnx_export import export_model
 
 from src import api
+from src.onnx_export import export_model
 
 
 @pytest.fixture(params=["sklearn", "onnx"])

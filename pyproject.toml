@@ -41,3 +41,6 @@ extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]

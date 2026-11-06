@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, ConfigDict, Field
+
 from src.predictors import OnnxPredictor, SklearnPredictor
 
 ROOT = Path(__file__).resolve().parents[1]
