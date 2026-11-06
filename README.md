@@ -191,6 +191,7 @@ poetry run python scripts/benchmark_latency.py --label my_test
 | `ONNX_THREADS` | unset | intra-op threads for ONNX Runtime |
 | `MODELS_DIR` | `models` | where the serving artifacts are loaded from |
 | `MIN_URGENT_RECALL` | `0.80` | recall gate used when promoting a retrained model |
+| CORS_ORIGINS | (empty) | Comma-separated list of origins allowed to call the API from a browser |
 
 ## Repository structure
 
