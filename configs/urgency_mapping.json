@@ -1,19 +1,19 @@
 {
     "1": {
         "category": "neoplasms",
-        "urgency": "atencao"
+        "urgency": "attention"
     },
     "2": {
         "category": "digestive_system_diseases",
-        "urgency": "atencao"
+        "urgency": "attention"
     },
     "3": {
         "category": "nervous_system_diseases",
-        "urgency": "urgente"
+        "urgency": "urgent"
     },
     "4": {
         "category": "cardiovascular_diseases",
-        "urgency": "urgente"
+        "urgency": "urgent"
     },
     "5": {
         "category": "general_pathological_conditions",

@@ -8,4 +8,4 @@ RUN python -m venv /home/airflow/train-venv \
     && export PATH=/home/airflow/train-venv/bin:$PATH \
     && pip install --no-cache-dir poetry==2.4.1 \
     && cd /tmp/build \
-    && poetry install --only main --no-root
+    && poetry install --only main,onnx --no-root

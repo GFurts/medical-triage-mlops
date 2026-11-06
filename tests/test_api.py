@@ -27,7 +27,7 @@ def test_predict_returns_valid_response(client):
     response = client.post("/predict", json={"text": "heart coronary disease"})
     assert response.status_code == 200
     body = response.json()
-    assert body["urgency"] in {"urgente", "atencao", "normal"}
+    assert body["urgency"] in {"urgent", "attention", "normal"}
     assert 0 <= body["confidence"] <= 1
 
 

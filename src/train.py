@@ -13,17 +13,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 
 from src.data_cleaning import remove_ambiguous_texts
+from src.onnx_export import export_model, max_probability_gap
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 PROCESSED_DIR = ROOT / "data" / "processed"
 MAPPING_PATH = ROOT / "configs" / "urgency_mapping.json"
 MODELS_DIR = ROOT / "models"
-CANDIDATE_PATH = MODELS_DIR / "candidate" / "model.joblib"
-MODEL_PATH = MODELS_DIR / "model.joblib"
+CANDIDATE_DIR = MODELS_DIR / "candidate"
+SERVING_FILES = ["model.joblib", "vectorizer.joblib", "forest.onnx"]
 METRICS_PATH = MODELS_DIR / "metrics.json"
 RANDOM_STATE = 42
 MIN_URGENT_RECALL = float(os.getenv("MIN_URGENT_RECALL", "0.80"))
+MAX_ONNX_GAP = 1e-4
 
 
 def load_clean_data():
@@ -74,7 +76,7 @@ def evaluate(model, texts, labels, mapping):
     return {
         "f1_macro": f1_score(labels, pred, average="macro"),
         "urgent_recall": recall_score(
-            true_urgency == "urgente", pred_urgency == "urgente"
+            true_urgency == "urgent", pred_urgency == "urgent"
         ),
     }
 
@@ -124,20 +126,28 @@ def train_model():
     train_clean = pd.read_csv(PROCESSED_DIR / "train.csv")
     model = build_pipeline(class_weight="balanced")
     model.fit(train_clean["medical_abstract"], train_clean["condition_label"])
-    CANDIDATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(model, CANDIDATE_PATH)
-    print(f"Modelo candidato salvo em {CANDIDATE_PATH}")
+    CANDIDATE_DIR.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, CANDIDATE_DIR / "model.joblib")
+    print(f"Modelo candidato salvo em {CANDIDATE_DIR}")
+
+
+def export_onnx():
+    """Etapa 3: converte o candidato para o formato de serviço (TF-IDF + floresta em ONNX)."""
+    export_model(joblib.load(CANDIDATE_DIR / "model.joblib"), CANDIDATE_DIR)
+    print(f"Candidato exportado para ONNX em {CANDIDATE_DIR}")
 
 
 def evaluate_and_promote():
-    """Etapa 3: avalia o candidato no teste e só o promove se passar no portão de qualidade."""
+    """Etapa 4: avalia o candidato no teste e só o promove se passar nos dois portões."""
     train_clean = pd.read_csv(PROCESSED_DIR / "train.csv")
     test_clean = pd.read_csv(PROCESSED_DIR / "test.csv")
     mapping = load_urgency_mapping()
-    model = joblib.load(CANDIDATE_PATH)
+    model = joblib.load(CANDIDATE_DIR / "model.joblib")
+    texts = test_clean["medical_abstract"]
 
-    metrics = evaluate(
-        model, test_clean["medical_abstract"], test_clean["condition_label"], mapping
+    metrics = evaluate(model, texts, test_clean["condition_label"], mapping)
+    metrics["onnx_max_probability_gap"] = max_probability_gap(
+        model, CANDIDATE_DIR, texts.tolist()
     )
     metrics["train_rows"] = len(train_clean)
     metrics["test_rows"] = len(test_clean)
@@ -145,7 +155,7 @@ def evaluate_and_promote():
     print("\n== Modelo candidato (avaliado no teste) ==")
     for name, value in metrics.items():
         print(
-            f"{name}: {value:.3f}" if isinstance(value, float) else f"{name}: {value}"
+            f"{name}: {value:.3g}" if isinstance(value, float) else f"{name}: {value}"
         )
 
     if not passes_quality_gate(metrics):
@@ -153,16 +163,24 @@ def evaluate_and_promote():
             f"Modelo REPROVADO: urgent_recall {metrics['urgent_recall']:.3f} "
             f"< mínimo {MIN_URGENT_RECALL}. O modelo em uso não foi alterado."
         )
+    if metrics["onnx_max_probability_gap"] > MAX_ONNX_GAP:
+        raise SystemExit(
+            f"Modelo REPROVADO: o ONNX diverge do scikit-learn em "
+            f"{metrics['onnx_max_probability_gap']:.2e} (máximo {MAX_ONNX_GAP:.0e}). "
+            "O modelo em uso não foi alterado."
+        )
 
     MODELS_DIR.mkdir(exist_ok=True)
-    shutil.copyfile(CANDIDATE_PATH, MODEL_PATH)
+    for name in SERVING_FILES:
+        shutil.copyfile(CANDIDATE_DIR / name, MODELS_DIR / name)
     METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-    print(f"\nModelo aprovado e promovido para {MODEL_PATH}")
+    print(f"\nModelo aprovado e promovido para {MODELS_DIR}")
 
 
 STEPS = {
     "prepare": prepare_data,
     "train": train_model,
+    "export": export_onnx,
     "evaluate": evaluate_and_promote,
 }
 

@@ -13,26 +13,18 @@ def step_command(step: str) -> str:
 
 with DAG(
     dag_id="medical_triage_retraining",
-    description="Retreino do classificador: preparar dados, treinar e promover o modelo",
+    description="Retreino: preparar dados, treinar, exportar para ONNX e promover o modelo",
     start_date=datetime(2026, 1, 1),
     schedule="@weekly",
     catchup=False,
     max_active_runs=1,
     tags=["mlops", "triage"],
 ) as dag:
-    prepare = BashOperator(
-        task_id="prepare_data",
-        bash_command=step_command("prepare"),
-    )
-
-    train = BashOperator(
-        task_id="train_model",
-        bash_command=step_command("train"),
-    )
-
+    prepare = BashOperator(task_id="prepare_data", bash_command=step_command("prepare"))
+    train = BashOperator(task_id="train_model", bash_command=step_command("train"))
+    export = BashOperator(task_id="export_onnx", bash_command=step_command("export"))
     evaluate = BashOperator(
-        task_id="evaluate_and_promote",
-        bash_command=step_command("evaluate"),
+        task_id="evaluate_and_promote", bash_command=step_command("evaluate")
     )
 
-    prepare >> train >> evaluate
+    prepare >> train >> export >> evaluate

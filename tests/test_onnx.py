@@ -1,6 +1,6 @@
 import pytest
 
-from src.onnx_export import export_model
+from src.onnx_export import export_model, max_probability_gap
 from src.predictors import OnnxPredictor
 
 
@@ -15,3 +15,13 @@ def test_onnx_confidence_matches_sklearn(tiny_model, tmp_path, text):
     expected = tiny_model.predict_proba([text])[0].max()
     assert confidence == pytest.approx(expected, abs=1e-5)
     assert label in tiny_model.classes_
+
+
+def test_onnx_probabilities_match_sklearn(tiny_model, tmp_path):
+    export_model(tiny_model, tmp_path)
+    texts = [
+        "heart coronary disease",
+        "tumor chemotherapy",
+        "words the model has never seen",
+    ]
+    assert max_probability_gap(tiny_model, tmp_path, texts) < 1e-4

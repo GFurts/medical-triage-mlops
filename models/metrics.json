@@ -1,6 +1,7 @@
 {
   "f1_macro": 0.7603645687963259,
   "urgent_recall": 0.8499210110584519,
+  "onnx_max_probability_gap": 1.8596649165036894e-07,
   "train_rows": 6607,
   "test_rows": 1691
 }
