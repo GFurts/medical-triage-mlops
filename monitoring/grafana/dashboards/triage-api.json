@@ -17,7 +17,7 @@
         {
             "id": 1,
             "type": "stat",
-            "title": "Total de requisições",
+            "title": "Total requests",
             "gridPos": {
                 "h": 5,
                 "w": 6,
@@ -50,7 +50,7 @@
         {
             "id": 2,
             "type": "stat",
-            "title": "Taxa de erro, 4xx + 5xx (desde o início)",
+            "title": "Error rate, 4xx + 5xx (since start)",
             "gridPos": {
                 "h": 5,
                 "w": 6,
@@ -96,7 +96,7 @@
         {
             "id": 3,
             "type": "stat",
-            "title": "Latência p95 de /predict (desde o início)",
+            "title": "p95 latency of /predict (since start)",
             "gridPos": {
                 "h": 5,
                 "w": 6,
@@ -129,7 +129,7 @@
         {
             "id": 4,
             "type": "bargauge",
-            "title": "Previsões por urgência",
+            "title": "Predictions by urgency",
             "gridPos": {
                 "h": 5,
                 "w": 6,
@@ -173,7 +173,7 @@
         {
             "id": 5,
             "type": "timeseries",
-            "title": "Requisições por segundo, por status",
+            "title": "Requests per second, by status",
             "gridPos": {
                 "h": 8,
                 "w": 12,
@@ -201,7 +201,7 @@
         {
             "id": 6,
             "type": "timeseries",
-            "title": "Latência de /predict (p50, p95, p99)",
+            "title": "/predict latency (p50, p95, p99)",
             "gridPos": {
                 "h": 8,
                 "w": 12,
@@ -239,7 +239,7 @@
         {
             "id": 7,
             "type": "timeseries",
-            "title": "Onde o tempo é gasto: inferência do modelo vs requisição completa (p95)",
+            "title": "Where the time goes: model inference vs full request (p95)",
             "gridPos": {
                 "h": 8,
                 "w": 24,
@@ -254,12 +254,12 @@
                 {
                     "refId": "A",
                     "expr": "histogram_quantile(0.95, sum by (le) (rate(model_inference_seconds_bucket[1m])))",
-                    "legendFormat": "inferência do modelo"
+                    "legendFormat": "model inference"
                 },
                 {
                     "refId": "B",
                     "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{path=\"/predict\"}[1m])))",
-                    "legendFormat": "requisição completa"
+                    "legendFormat": "full request"
                 }
             ],
             "fieldConfig": {
